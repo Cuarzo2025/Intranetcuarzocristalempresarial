@@ -1,0 +1,38 @@
+<div class="header-content">
+    <h1>⚙️ Configuración del Sistema</h1>
+    <p>Ajusta tus credenciales, preferencias y configuraciones del panel.</p>
+</div>
+
+<div class="config-grid dashboard-grid">
+    <div class="card">
+        <h3>🔒 Seguridad de Cuenta</h3>
+        <p>Aquí puedes cambiar tu contraseña y gestionar la autenticación de dos factores.</p>
+        <button class="form-button">Cambiar Contraseña</button>
+        <button class="form-button" style="margin-left: 10px; background-color: #777777;">Habilitar 2FA</button>
+    </div>
+    
+    <div class="card">
+        <h3>🔔 Preferencias de Notificación</h3>
+        <label style="display: flex; align-items: center; margin-bottom: 10px; color: #FFFFFF;">
+            <input type="checkbox" checked style="margin-right: 10px; width: 15px; height: 15px;">
+            Notificaciones de nuevas reservas
+        </label>
+        <label style="display: flex; align-items: center; color: #FFFFFF;">
+            <input type="checkbox" style="margin-right: 10px; width: 15px; height: 15px;">
+            Alertas de tareas vencidas
+        </label>
+        <p style="color: #888888; font-size: 0.9em; margin-top: 15px;">Las notificaciones se envían al correo asociado.</p>
+    </div>
+    
+    <div class="card" style="grid-column: 1 / -1;">
+        <h3>🛠️ Información del Sistema</h3>
+        <p>Versión del Panel: **1.0. Beta Cuarzo**</p>
+        <p>Última Actualización: 05 Noviembre 2025</p>
+    </div>
+</div>
+
+<style>
+    .config-grid {
+        grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+    }
+</style>

@@ -1,0 +1,187 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Reportes de Desempeño - Cuarzo Empresarial</title>
+    <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;600;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    <style>
+        /* Estilos Base del Dashboard (Consistencia) */
+        body {
+            background-color: #000000;
+            color: #FFFFFF;
+            font-family: 'Montserrat', sans-serif;
+            margin: 0;
+            padding: 0;
+            display: flex;
+            min-height: 100vh;
+        }
+        .sidebar {
+            width: 250px;
+            background-color: #0d0d0d;
+            padding: 20px;
+            box-shadow: 2px 0 10px rgba(0, 0, 0, 0.5);
+            display: flex;
+            flex-direction: column;
+        }
+        .sidebar-header {
+            text-align: center;
+            margin-bottom: 40px;
+            color: #E0E0E0;
+        }
+        .sidebar-header h2 {
+            font-size: 1.5em;
+            font-weight: 800;
+            margin: 5px 0 0;
+            color: #FFFFFF;
+        }
+        .sidebar nav a {
+            display: block;
+            color: #CCCCCC;
+            text-decoration: none;
+            padding: 15px 10px;
+            margin-bottom: 10px;
+            border-radius: 5px;
+            transition: background-color 0.3s, color 0.3s;
+            font-weight: 600;
+        }
+        .sidebar nav a:hover, .sidebar nav a.active {
+            background-color: #1a1a1a;
+            color: #00FFFF; 
+        }
+        .sidebar nav a i {
+            margin-right: 10px;
+            width: 20px;
+            text-align: center;
+        }
+        .main-content {
+            flex-grow: 1;
+            padding: 40px;
+            background-color: #000000;
+        }
+        .main-content h1 {
+            color: #FFFFFF;
+            font-weight: 800;
+            border-bottom: 2px solid #333333;
+            padding-bottom: 15px;
+            margin-bottom: 30px;
+        }
+        /* Estilos específicos de Reportes */
+        .report-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
+            gap: 30px;
+        }
+        .chart-card {
+            background-color: #0d0d0d;
+            padding: 25px;
+            border-radius: 10px;
+            box-shadow: 0 0 15px rgba(0, 0, 0, 0.3);
+        }
+        .chart-card h2 {
+            font-size: 1.4em;
+            color: #00FFFF;
+            margin-top: 0;
+            margin-bottom: 20px;
+            border-bottom: 1px solid #333333;
+            padding-bottom: 10px;
+        }
+        /* Simulación de Gráfico (simple visual) */
+        .chart-area {
+            height: 250px;
+            background-color: #1a1a1a;
+            border-radius: 5px;
+            display: flex;
+            align-items: flex-end;
+            padding: 10px;
+            gap: 5px;
+            position: relative;
+        }
+        .bar {
+            width: 15%;
+            background-color: #2ECC71; /* Verde para horas */
+            transition: height 1s;
+            position: relative;
+        }
+        .bar-label {
+            position: absolute;
+            top: -20px;
+            left: 50%;
+            transform: translateX(-50%);
+            font-size: 0.8em;
+            color: #FFFFFF;
+        }
+        /* Simulación de Gráfico de Calidad */
+        .quality-metric {
+            text-align: center;
+            padding: 20px;
+        }
+        .quality-metric .score {
+            font-size: 4em;
+            font-weight: 800;
+            color: #F1C40F; /* Amarillo para score */
+            margin: 10px 0;
+        }
+        .quality-metric p {
+            font-size: 1em;
+            color: #CCCCCC;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="sidebar">
+        <div class="sidebar-header">
+            <i class="fas fa-gem" style="font-size: 2.5em; color: #00FFFF;"></i>
+            <h2>Cuarzo Empresarial</h2>
+        </div>
+        <nav>
+            <a href="dashboard.html"><i class="fas fa-home"></i> Dashboard</a>
+            <a href="#"><i class="fas fa-tasks"></i> Tareas Activas</a>
+            <a href="reportes.html" class="active"><i class="fas fa-chart-line"></i> Reportes</a>
+            <a href="datos-personales.html"><i class="fas fa-cog"></i> Configuración</a>
+            <a href="contrato-legal.html"><i class="fas fa-gavel"></i> Documentación Legal</a>
+            <a href="login.html" style="margin-top: auto;"><i class="fas fa-sign-out-alt"></i> Cerrar Sesión</a>
+        </nav>
+    </div>
+
+    <div class="main-content">
+        <h1><i class="fas fa-chart-bar"></i> Reportes de Desempeño Mensual</h1>
+        <p style="color: #CCCCCC; margin-bottom: 30px;">Aquí puedes revisar tus métricas clave de rendimiento, facturación e impacto en los proyectos de Cuarzo Empresarial.</p>
+        
+        <div class="report-grid">
+            
+            <div class="chart-card">
+                <h2><i class="fas fa-clock"></i> Horas Facturadas por Proyecto (Último Mes)</h2>
+                <div class="chart-area">
+                    <div class="bar" style="height: 80%;">
+                        <span class="bar-label">Proyecto A (80h)</span>
+                    </div>
+                    <div class="bar" style="height: 60%; background-color: #3498DB;">
+                        <span class="bar-label">Proyecto B (60h)</span>
+                    </div>
+                    <div class="bar" style="height: 40%; background-color: #9B59B6;">
+                        <span class="bar-label">Proyecto C (40h)</span>
+                    </div>
+                    <div class="bar" style="height: 20%; background-color: #E74C3C;">
+                        <span class="bar-label">Soporte (20h)</span>
+                    </div>
+                </div>
+                <p style="text-align: center; font-size: 0.9em; margin-top: 15px; color: #777;">Distribución de la carga de trabajo facturable.</p>
+            </div>
+            
+            <div class="chart-card">
+                <h2><i class="fas fa-star"></i> Índice de Calidad y Entregas (Q3)</h2>
+                <div class="quality-metric">
+                    <p>Score Promedio de Revisiones de Clientes</p>
+                    <div class="score">4.7 / 5.0</div>
+                    <p style="color: #2ECC71;">¡Excelente desempeño! 98% de entregas a tiempo.</p>
+                </div>
+            </div>
+
+            </div>
+    </div>
+    
+</body>
+</html>

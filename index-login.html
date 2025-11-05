@@ -1,0 +1,183 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Acceso Interno - Cuarzo</title>
+    <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;600;800&display=swap" rel="stylesheet">
+    <style>
+        body {
+            background-color: #000000; /* Fondo negro */
+            color: #FFFFFF;
+            font-family: 'Montserrat', sans-serif;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            margin: 0;
+            overflow: hidden; /* Oculta barras de scroll si las vistas no encajan */
+        }
+        .container {
+            width: 90%;
+            max-width: 400px;
+            /* Usaremos Flexbox para manejar las dos vistas (Login y Registro) */
+            display: flex;
+            transition: transform 0.5s ease-in-out;
+        }
+        .login-view, .register-view {
+            background-color: #1a1a1a; /* Gris oscuro para las vistas */
+            padding: 40px;
+            border-radius: 10px;
+            box-shadow: 0 0 30px rgba(255, 255, 255, 0.1);
+            width: 100%;
+            flex-shrink: 0; /* Evita que las vistas se encojan */
+            text-align: center;
+        }
+        h1 {
+            font-size: 2em;
+            margin-bottom: 30px;
+            color: #FFFFFF;
+        }
+        .input-group {
+            margin-bottom: 20px;
+            text-align: left;
+        }
+        .input-group label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 600;
+        }
+        .input-group input {
+            width: 100%;
+            padding: 12px;
+            border: 1px solid #333333;
+            border-radius: 5px;
+            background-color: #2a2a2a; 
+            color: #FFFFFF;
+            box-sizing: border-box;
+            font-size: 1em;
+        }
+        button {
+            width: 100%;
+            padding: 15px;
+            background-color: #FFFFFF; 
+            color: #000000;
+            border: none;
+            border-radius: 5px;
+            font-weight: 800;
+            cursor: pointer;
+            transition: background-color 0.3s ease;
+            font-size: 1.1em;
+            margin-bottom: 15px;
+        }
+        button:hover {
+            background-color: #cccccc;
+        }
+        .switch-link {
+            color: #CCCCCC;
+            text-decoration: none;
+            cursor: pointer;
+            display: block;
+            margin-top: 10px;
+            font-size: 0.9em;
+        }
+        .switch-link:hover {
+            color: #FFFFFF;
+            text-decoration: underline;
+        }
+
+        /* Clase para mostrar la vista de Registro */
+        .show-register {
+            transform: translateX(-100%);
+        }
+    </style>
+</head>
+<body>
+    <div class="container" id="form-container">
+        
+        <div class="login-view" id="login-view">
+            <h1>🔒 Acceso - Cuarzo Empresarial</h1>
+            
+            <form id="login-form">
+                <div class="input-group">
+                    <label for="username">Usuario / Email</label>
+                    <input type="text" id="username" required>
+                </div>
+                <div class="input-group">
+                    <label for="password">Contraseña</label>
+                    <input type="password" id="password" required>
+                </div>
+                <button type="submit">Ingresar al Sistema</button>
+            </form>
+            
+            <a class="switch-link" id="show-register-btn">¿Eres empleado nuevo? Regístrate aquí.</a>
+        </div>
+
+        <div class="register-view" id="register-view">
+            <h1>✍️ Registro de Empleado</h1>
+            
+            <form id="register-form">
+                <p style="color: #BBBBBB; font-size: 0.9em; margin-bottom: 25px;">
+                    Completa tus datos. Recibirás tu ID y contraseña por email para acceder.
+                </p>
+                
+                <div class="input-group">
+                    <label for="reg-name">Nombre Completo</label>
+                    <input type="text" id="reg-name" required>
+                </div>
+                <div class="input-group">
+                    <label for="reg-email">Email Corporativo</label>
+                    <input type="email" id="reg-email" required>
+                </div>
+                
+                <button type="submit">Solicitar Acceso</button>
+            </form>
+            
+            <a class="switch-link" id="show-login-btn">Volver al Inicio de Sesión</a>
+        </div>
+
+    </div>
+
+    <script>
+        const formContainer = document.getElementById('form-container');
+        const loginForm = document.getElementById('login-form');
+        const registerForm = document.getElementById('register-form');
+        const showRegisterBtn = document.getElementById('show-register-btn');
+        const showLoginBtn = document.getElementById('show-login-btn');
+
+        // --- Funcionalidad de Alternancia de Vistas ---
+        showRegisterBtn.addEventListener('click', () => {
+            formContainer.classList.add('show-register');
+        });
+
+        showLoginBtn.addEventListener('click', () => {
+            formContainer.classList.remove('show-register');
+        });
+        
+        // --- Simulación de Login ---
+        loginForm.addEventListener('submit', function(event) {
+            event.preventDefault();
+            // SIMULACIÓN: En un sistema real, se verifica el usuario y contraseña aquí.
+            window.location.href = 'dashboard.html';
+        });
+
+        // --- Simulación de Registro con Notificación de Email ---
+        registerForm.addEventListener('submit', function(event) {
+            event.preventDefault();
+            const employeeName = document.getElementById('reg-name').value;
+            const employeeEmail = document.getElementById('reg-email').value;
+
+            // SIMULACIÓN: Mensaje de éxito y notificación de email
+            alert(
+                `¡Registro exitoso, ${employeeName}!\n\n` + 
+                `Hemos enviado tu ID de empleado y tu contraseña temporal a ${employeeEmail}.\n` + 
+                `Por favor, revisa tu bandeja de entrada para ingresar al sistema.\n\n` +
+                `*Redirigiendo a la pantalla de Login...*`
+            );
+            
+            // Regresar al login (o directamente al dashboard si se considera que ya está logueado)
+            window.location.href = 'dashboard.html'; // Redirigimos al dashboard para continuar el flujo
+        });
+    </script>
+</body>
+</html>
