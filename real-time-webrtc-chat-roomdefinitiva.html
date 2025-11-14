@@ -1,0 +1,754 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sala de Videoconferencia WebRTC Empresarial con Chat Online</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    <style>
+        /* Estilos Base */
+        body { 
+            font-family: 'Inter', sans-serif; 
+            background-color: #0d0d0d; 
+            color: #E0E0E0; 
+            min-height: 100vh;
+        }
+        .room-container {
+            background-color: #1a1a1a;
+            box-shadow: 0 0 30px rgba(0, 0, 0, 0.5);
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+        #local-video-player {
+            transform: scaleX(-1); /* Efecto espejo para el video local */
+            object-fit: cover;
+            width: 100%;
+            height: 100%;
+        }
+        .video-tile {
+            min-height: 250px; /* Asegura un tamaño mínimo visible */
+            position: relative;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .control-button {
+            transition: background-color 0.2s;
+        }
+        /* Overlay para la solicitud de nombre */
+        #name-prompt-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.85);
+            z-index: 1000;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        /* Adaptación a Móviles */
+        @media (max-width: 1024px) {
+            .control-button span { display: none; }
+            .control-bar { padding: 12px 8px; }
+        }
+    </style>
+</head>
+<body class="p-2 sm:p-6">
+
+    <script type="module">
+        // Importaciones de Firebase (Necesarias para el chat online y la señalización WebRTC)
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+        import { getAuth, signInAnonymously, signInWithCustomToken, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { getFirestore, doc, addDoc, onSnapshot, collection, query, orderBy, serverTimestamp, setDoc, getDoc, updateDoc, arrayUnion } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+
+        // --- GLOBAL VARIABLES (Provided by Canvas Environment) ---
+        const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
+        const firebaseConfig = typeof __firebase_config !== 'undefined' ? JSON.parse(__firebase_config) : {};
+        const initialAuthToken = typeof __initial_auth_token !== 'undefined' ? __initial_auth_token : null;
+        
+        // ID de la sala de señalización compartida (Única para toda la empresa)
+        const ROOM_ID = 'cuarzo_cristal_empresarial_room_v1'; 
+
+        // --- FIREBASE INITIALIZATION ---
+        const app = initializeApp(firebaseConfig);
+        const db = getFirestore(app);
+        const auth = getAuth(app);
+        
+        // Rutas de Firestore
+        const chatPath = `artifacts/${appId}/public/data/chat_messages`;
+        const signalingDocRef = doc(db, `artifacts/${appId}/public/data/webrtc_room`, ROOM_ID);
+
+        let userId = null;
+        let userName = localStorage.getItem('cuarzoUserName') || ''; // Usar nombre guardado
+        let isAuthReady = false;
+
+        // --- WEBRTC STATE & CONFIGURATION ---
+        let localStream = null;
+        let screenStream = null;
+        let peerConnection = null;
+        let videoSender = null; // Para reemplazar el track de video (cámara <-> pantalla)
+        let isMicMuted = false;
+        let isVideoOff = false;
+        let isSharingScreen = false;
+        let isCallActive = false;
+        
+        const MAIN_VIDEO_ID = 'local-video-player';
+        const REMOTE_GRID_ID = 'remote-video-grid';
+        const CHAT_MSGS_ID = 'chat-messages';
+        
+        // Servidores ICE/STUN
+        const CONFIG = {
+            iceServers: [{ urls: ['stun:stun.l.google.com:19302'] }]
+        };
+
+        // ----------------------------------------------------------------------
+        // --- PARTE 1: AUTENTICACIÓN Y CHAT EN TIEMPO REAL (FIRESTORE)
+        // ----------------------------------------------------------------------
+        
+        async function setupAuth() {
+            try {
+                if (initialAuthToken) {
+                    await signInWithCustomToken(auth, initialAuthToken);
+                } else {
+                    await signInAnonymously(auth);
+                }
+
+                onAuthStateChanged(auth, (user) => {
+                    if (user) {
+                        userId = user.uid;
+                        isAuthReady = true;
+                        
+                        document.getElementById('user-id-display').textContent = `ID: ${userId.substring(0, 5)}`;
+                        document.getElementById('user-name-display').textContent = userName;
+                        
+                        listenForMessages(); 
+                        
+                        // Lógica de Autoinicio: si se acaba de ingresar el nombre, iniciar la llamada
+                        if (localStorage.getItem('startCallAfterAuth') === 'true') {
+                            localStorage.removeItem('startCallAfterAuth');
+                            startCall(); // ¡Inicia la reunión automáticamente!
+                        } else if (userName) {
+                             // Si el nombre ya estaba guardado, solo habilitar el botón
+                             document.getElementById('btn-call').disabled = false;
+                        }
+                    } else {
+                        console.log("No se pudo autenticar al usuario.");
+                    }
+                });
+
+            } catch (error) {
+                console.error("Error de autenticación Firebase:", error);
+            }
+        }
+
+        // Función para manejar el inicio de sesión, guardado de nombre e INICIO AUTOMÁTICO DE LLAMADA
+        window.setUserNameAndContinue = function() {
+            const nameInput = document.getElementById('name-input');
+            const name = nameInput.value.trim();
+            
+            if (name.length < 3) {
+                // Usar un mensaje en lugar de alert()
+                document.getElementById('name-error-message').classList.remove('hidden');
+                document.getElementById('name-error-message').textContent = 'Por favor, ingresa tu nombre completo (mínimo 3 caracteres).';
+                return;
+            }
+            document.getElementById('name-error-message').classList.add('hidden');
+
+            userName = name;
+            localStorage.setItem('cuarzoUserName', userName);
+            document.getElementById('user-name-display').textContent = userName;
+            
+            // 1. OCULTAR EL OVERLAY (CUMPLIDO)
+            document.getElementById('name-prompt-overlay').classList.add('hidden');
+            
+            // 2. INICIAR LA REUNIÓN CON AUDIO Y VIDEO
+            if (isAuthReady) {
+                 // Si la autenticación es súper rápida, iniciamos de inmediato
+                 startCall(); 
+            } else {
+                 // Si la autenticación aún no termina, establecemos una bandera para el onAuthStateChanged
+                 localStorage.setItem('startCallAfterAuth', 'true');
+                 updateStatus('Identificación exitosa. Esperando conexión segura...', 'text-yellow-400');
+            }
+        }
+
+
+        window.sendMessage = async function() {
+            const inputElement = document.getElementById('chat-input');
+            const text = inputElement.value.trim();
+
+            if (!isAuthReady || !text) return;
+
+            try {
+                const messagesRef = collection(db, chatPath);
+
+                await addDoc(messagesRef, {
+                    userId: userId,
+                    userName: userName,
+                    text: text,
+                    timestamp: serverTimestamp() 
+                });
+
+                inputElement.value = ''; 
+                inputElement.focus();
+
+            } catch (error) {
+                console.error("Error al enviar mensaje:", error);
+            }
+        }
+
+        function listenForMessages() {
+            if (!isAuthReady) return;
+
+            const messagesRef = collection(db, chatPath);
+            const q = query(messagesRef, orderBy("timestamp", "asc"));
+            
+            const chatBox = document.getElementById(CHAT_MSGS_ID);
+
+            onSnapshot(q, (snapshot) => {
+                chatBox.innerHTML = ''; 
+                
+                snapshot.forEach((doc) => {
+                    const data = doc.data();
+                    
+                    const time = data.timestamp ? new Date(data.timestamp.seconds * 1000).toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' }) : '...';
+                    
+                    const isLocalUser = data.userId === userId;
+                    const nameColor = isLocalUser ? 'text-indigo-400' : 'text-green-400';
+                    const bubbleBg = isLocalUser ? 'bg-indigo-900/50 self-end' : 'bg-gray-700/70 self-start';
+                    const nameDisplay = isLocalUser ? 'Tú' : data.userName;
+                    
+                    const messageElement = document.createElement('div');
+                    messageElement.className = `flex flex-col max-w-[85%] rounded-lg p-2 mb-2 ${bubbleBg}`;
+                    messageElement.innerHTML = `
+                        <p class="font-bold text-xs ${nameColor}">${nameDisplay} <span class="text-gray-400 font-normal ml-2">${time}</span></p>
+                        <p class="text-white text-sm">${data.text}</p>
+                    `;
+                    chatBox.appendChild(messageElement);
+                });
+                
+                chatBox.scrollTop = chatBox.scrollHeight;
+            });
+        }
+        
+        // ----------------------------------------------------------------------
+        // --- PARTE 2: LÓGICA WEBRTC AUTOMATIZADA CON SEÑALIZACIÓN FIRESTORE
+        // ----------------------------------------------------------------------
+
+        function updateStatus(message, color = 'text-yellow-400') {
+            const statusElement = document.getElementById('connection-status');
+            statusElement.className = `text-sm mb-2 font-semibold ${color}`;
+            statusElement.textContent = `Estado: ${message}`;
+        }
+        
+        async function sendSdp(sdp) {
+            updateStatus(`Enviando ${sdp.type}...`, 'text-indigo-400');
+            const data = {};
+            if (sdp.type === 'offer') {
+                data.offer = sdp;
+                data.offerInitiatorId = userId;
+                data.candidatesA = []; 
+                data.answer = null;
+            } else if (sdp.type === 'answer') {
+                data.answer = sdp;
+            }
+            try {
+                await setDoc(signalingDocRef, data, { merge: true });
+            } catch (error) {
+                console.error("Error al enviar SDP a Firestore:", error);
+            }
+        }
+
+        async function sendIceCandidate(candidate) {
+            if (!candidate) return;
+
+            // Determinar a qué array de candidatos añadir
+            const isInitiator = window.currentSignalingData && window.currentSignalingData.offerInitiatorId === userId;
+            const field = isInitiator ? 'candidatesA' : 'candidatesB';
+
+            try {
+                await updateDoc(signalingDocRef, {
+                    [field]: arrayUnion(candidate.toJSON())
+                });
+                console.log(`ICE Candidate enviado a ${field}`);
+            } catch (error) {
+                console.error("Error al enviar ICE Candidate:", error);
+            }
+        }
+        
+        function isCallInitiator() {
+            const roomData = window.currentSignalingData; 
+            return roomData && roomData.offerInitiatorId === userId;
+        }
+
+        function initializePeerConnection() {
+            peerConnection = new RTCPeerConnection(CONFIG);
+            
+            // 1. Añadir tracks del stream local
+            if (localStream) {
+                localStream.getTracks().forEach(track => {
+                    // Guardar el sender de video para poder reemplazarlo después (ej. por compartir pantalla)
+                    const sender = peerConnection.addTrack(track, localStream);
+                    if (track.kind === 'video') {
+                        videoSender = sender;
+                    }
+                });
+            }
+            
+            // 2. Recibir tracks remotos
+            peerConnection.ontrack = (event) => {
+                handleRemoteTrack(event.streams[0]);
+            };
+            
+            // 3. Enviar ICE Candidates automáticamente a través de Firestore
+            peerConnection.onicecandidate = (event) => {
+                if (event.candidate) {
+                    sendIceCandidate(event.candidate);
+                }
+            };
+            
+            updateStatus('Conexión P2P lista. Esperando señalización.');
+        }
+        
+        // Maneja la Oferta o la Respuesta entrante de Firestore
+        async function processSdpSignal(sdp) {
+            if (!peerConnection) return;
+            
+            try {
+                if (sdp.type === 'offer' && sdp.sdp && !isCallInitiator()) {
+                    updateStatus('Oferta recibida. Creando Respuesta...', 'text-green-400');
+                    await peerConnection.setRemoteDescription(sdp);
+                    const answer = await peerConnection.createAnswer();
+                    await peerConnection.setLocalDescription(answer);
+                    await sendSdp(peerConnection.localDescription);
+                } else if (sdp.type === 'answer' && sdp.sdp && isCallInitiator()) {
+                    updateStatus('Respuesta recibida. Conexión establecida.', 'text-green-500');
+                    await peerConnection.setRemoteDescription(sdp);
+                    isCallActive = true;
+                }
+            } catch (error) {
+                console.error("Error al procesar SDP:", error);
+            }
+        }
+
+        // Maneja los ICE Candidates entrantes de Firestore
+        async function processIceCandidates(candidates) {
+            if (!peerConnection || !candidates || candidates.length === 0) return;
+
+            for (const candidate of candidates) {
+                try {
+                    if (peerConnection.remoteDescription) {
+                         await peerConnection.addIceCandidate(new RTCIceCandidate(candidate));
+                    } else {
+                        console.warn("Retrasando ICE Candidate. SDP remoto no establecido aún.");
+                    }
+                } catch (error) {
+                    console.warn('Error al añadir ICE Candidate (Ignorado):', error);
+                }
+            }
+        }
+
+        function listenForSignals() {
+            if (!isAuthReady) return;
+
+            onSnapshot(signalingDocRef, (docSnapshot) => {
+                if (!docSnapshot.exists()) return;
+
+                const data = docSnapshot.data();
+                window.currentSignalingData = data; 
+                
+                // Si la PC no está inicializada pero hay una oferta, la inicializamos
+                if (data.offer && !peerConnection) {
+                    initializePeerConnection();
+                }
+
+                if (data.offer) {
+                    processSdpSignal(data.offer);
+                }
+                if (data.answer) {
+                    processSdpSignal(data.answer);
+                }
+                
+                // Procesar ICE Candidates
+                const remoteCandidatesField = data.offerInitiatorId === userId ? 'candidatesB' : 'candidatesA';
+                if (data[remoteCandidatesField] && data[remoteCandidatesField].length > 0) {
+                    processIceCandidates(data[remoteCandidatesField]);
+                }
+            });
+        }
+        
+        window.startCall = async function() {
+            if (isCallActive || !userName || !isAuthReady) return;
+
+            // Bloquear el botón durante la conexión
+            document.getElementById('btn-call').disabled = true;
+            updateStatus('Comprobando sala de reuniones...', 'text-yellow-400');
+
+            // 1. Asegurar que tenemos media local
+            if (!localStream) {
+                 await startLocalMedia();
+            }
+
+            // 2. Inicializar la Peer Connection si no está lista
+            if (!peerConnection) {
+                initializePeerConnection();
+            }
+
+            // 3. Comprobar si ya existe una Oferta
+            const docSnap = await getDoc(signalingDocRef);
+            
+            if (docSnap.exists() && docSnap.data().offer && docSnap.data().offerInitiatorId !== userId) {
+                // La sala existe y tiene una Oferta (Peer B, Responder). El listener hará el resto.
+                updateStatus('Sala encontrada. Escuchando Oferta...');
+            } else {
+                // La sala no existe o la oferta caducó (Peer A, Crear Oferta)
+                updateStatus('Creando Oferta para la sala...', 'text-indigo-400');
+                const offer = await peerConnection.createOffer();
+                await peerConnection.setLocalDescription(offer);
+                await sendSdp(peerConnection.localDescription);
+            }
+            
+            // 4. Iniciar el listener de señales
+            listenForSignals();
+
+            document.getElementById('btn-call').innerHTML = '<i class="fas fa-satellite-dish mr-1 sm:mr-2"></i> <span>Conectando...</span>';
+        }
+        
+        window.hangUp = async function() {
+             if (peerConnection) {
+                peerConnection.close();
+                peerConnection = null;
+                videoSender = null; // Limpiar el sender
+            }
+            
+            // Si estábamos compartiendo pantalla, detener ese stream
+            if (isSharingScreen && screenStream) {
+                screenStream.getTracks().forEach(track => track.stop());
+                isSharingScreen = false;
+                updateShareButtonUI();
+            }
+
+            // Detener el stream local de la cámara/mic
+            if (localStream) {
+                localStream.getTracks().forEach(track => track.stop());
+                localStream = null;
+            }
+            
+            // Limpiar la interfaz remota
+            document.getElementById(REMOTE_GRID_ID).innerHTML = `
+                <i class="fas fa-users text-6xl text-gray-500/70"></i>
+                <span class="absolute bottom-2 font-semibold text-gray-400">Esperando Peer Remoto...</span>
+            `;
+            
+            // Limpiar el documento de señalización si fuimos los iniciadores o si somos el único peer
+            try {
+                const docSnap = await getDoc(signalingDocRef);
+                if (docSnap.exists() && docSnap.data().offerInitiatorId === userId) {
+                    await setDoc(signalingDocRef, {}); // Vaciar el documento
+                    updateStatus('Llamada finalizada. Sala de señalización limpia.', 'text-gray-400');
+                } else {
+                     updateStatus('Llamada finalizada. Desconectado.', 'text-gray-400');
+                }
+            } catch (error) {
+                 console.warn("Error al intentar limpiar la sala:", error);
+                 updateStatus('Llamada finalizada. Error al limpiar la sala.', 'text-red-400');
+            }
+            
+            isCallActive = false;
+            document.getElementById('btn-call').disabled = false;
+            document.getElementById('btn-call').innerHTML = '<i class="fas fa-phone-volume mr-1 sm:mr-2"></i> <span>Iniciar/Unirse a la Llamada</span>';
+        }
+
+        // --- MANEJO DE MEDIA LOCAL Y UI ---
+        
+        async function startLocalMedia() {
+            try {
+                localStream = await navigator.mediaDevices.getUserMedia({ 
+                    audio: true, 
+                    video: { facingMode: "user" } 
+                });
+
+                const videoElement = document.getElementById(MAIN_VIDEO_ID);
+                videoElement.srcObject = localStream;
+                await videoElement.play();
+                
+                updateMicButtonUI();
+                updateVideoButtonUI();
+                
+            } catch (error) {
+                console.error("Error al acceder a los medios locales:", error);
+                updateStatus('ERROR: Permiso denegado para medios locales. Necesitas permitir la cámara y micrófono.', 'text-red-500');
+            }
+        }
+
+        window.toggleMic = function() {
+            if (!localStream) return;
+            isMicMuted = !isMicMuted;
+            localStream.getAudioTracks().forEach(track => {
+                track.enabled = !isMicMuted;
+            });
+            updateMicButtonUI();
+        }
+
+        window.toggleVideo = function() {
+            if (!localStream) return;
+            isVideoOff = !isVideoOff;
+            localStream.getVideoTracks().forEach(track => {
+                track.enabled = !isVideoOff;
+            });
+            const videoElement = document.getElementById(MAIN_VIDEO_ID);
+            videoElement.classList.toggle('hidden', isVideoOff);
+            document.getElementById('video-off-icon').classList.toggle('hidden', !isVideoOff);
+            updateVideoButtonUI();
+        }
+        
+        window.toggleScreenShare = async function() {
+            if (!peerConnection || !videoSender) {
+                 updateStatus('ERROR: Debes Iniciar/Unirte a la Llamada primero para compartir pantalla.', 'text-red-400');
+                 return;
+            }
+            
+            if (isSharingScreen) {
+                // DETENER COMPARTIR PANTALLA: Volver a la cámara
+                screenStream.getTracks().forEach(track => track.stop());
+                screenStream = null;
+                
+                // Reemplazar track de pantalla con el de la cámara
+                await videoSender.replaceTrack(localStream.getVideoTracks()[0]);
+                
+                // Actualizar video local para mostrar la cámara
+                document.getElementById(MAIN_VIDEO_ID).srcObject = localStream;
+                document.getElementById(MAIN_VIDEO_ID).style.transform = 'scaleX(-1)'; // Restaurar efecto espejo
+                
+                isSharingScreen = false;
+                updateStatus('Volviendo a la cámara local.', 'text-gray-400');
+            } else {
+                // INICIAR COMPARTIR PANTALLA
+                try {
+                    screenStream = await navigator.mediaDevices.getDisplayMedia({ video: true, audio: false });
+                    
+                    if (screenStream) {
+                        const screenTrack = screenStream.getVideoTracks()[0];
+                        
+                        // Reemplazar track de la cámara con el de la pantalla
+                        await videoSender.replaceTrack(screenTrack);
+
+                        // Actualizar video local para mostrar la pantalla compartida
+                        document.getElementById(MAIN_VIDEO_ID).srcObject = screenStream;
+                        document.getElementById(MAIN_VIDEO_ID).style.transform = 'scaleX(1)'; // Quitar el efecto espejo
+                        
+                        isSharingScreen = true;
+                        updateStatus('¡Compartiendo pantalla! Tu video ha sido reemplazado.', 'text-green-400');
+                        
+                        // Listener para saber cuándo el usuario deja de compartir desde el botón nativo del navegador
+                        screenTrack.onended = () => {
+                            if (isSharingScreen) {
+                                toggleScreenShare(); // Llamarse a sí mismo para revertir
+                            }
+                        };
+                    }
+                } catch (error) {
+                    console.error("Error al compartir pantalla:", error);
+                    updateStatus('Compartir pantalla cancelado o fallido.', 'text-red-400');
+                }
+            }
+            updateShareButtonUI();
+        }
+
+        function handleRemoteTrack(remoteStream) {
+            // Permitir que la llamada se active incluso si el peer remoto se une más tarde
+            // if (isCallActive) return; 
+
+            const remoteVideo = document.createElement('video');
+            remoteVideo.autoplay = true;
+            remoteVideo.playsInline = true;
+            remoteVideo.srcObject = remoteStream;
+            remoteVideo.className = 'w-full h-full absolute top-0 left-0 object-cover rounded-xl';
+
+            const tile = document.createElement('div');
+            tile.className = 'video-tile bg-gray-800 rounded-xl relative overflow-hidden flex items-center justify-center border-4 border-green-500';
+            tile.appendChild(remoteVideo);
+
+            tile.innerHTML += `
+                <span class="absolute bottom-1 left-1 bg-black/50 text-white text-xs px-2 py-0.5 rounded">
+                    Peer Remoto (Conectado)
+                </span>
+            `;
+
+            document.getElementById(REMOTE_GRID_ID).innerHTML = ''; 
+            document.getElementById(REMOTE_GRID_ID).appendChild(tile);
+            updateStatus('¡Conexión de Video y Audio Establecida!', 'text-green-500');
+            isCallActive = true;
+            document.getElementById('btn-call').innerHTML = '<i class="fas fa-check-circle mr-1 sm:mr-2"></i> <span>Conectado</span>';
+            document.getElementById('btn-call').disabled = true;
+        }
+
+        function updateMicButtonUI() {
+            const micButton = document.getElementById('btn-toggle-mic');
+            const status = isMicMuted ? 'Silenciado' : 'Mic ON';
+            micButton.className = `control-button inline-flex items-center px-3 py-2 sm:py-3 sm:px-4 text-white rounded-full text-lg hover:opacity-80 font-semibold ${isMicMuted ? 'bg-gray-600' : 'bg-green-600'}`;
+            micButton.innerHTML = `<i class="fas ${isMicMuted ? 'fa-microphone-slash' : 'fa-microphone-alt'} mr-1 sm:mr-2"></i> <span>${status}</span>`;
+        }
+
+        function updateVideoButtonUI() {
+            const videoButton = document.getElementById('btn-toggle-video');
+            const status = isVideoOff ? 'Video OFF' : 'Video ON';
+            videoButton.className = `control-button inline-flex items-center px-3 py-2 sm:py-3 sm:px-4 text-white rounded-full text-lg hover:opacity-80 font-semibold ${isVideoOff ? 'bg-gray-600' : 'bg-red-600'}`;
+            videoButton.innerHTML = `<i class="fas ${isVideoOff ? 'fa-video-slash' : 'fa-video'} mr-1 sm:mr-2"></i> <span>${status}</span>`;
+        }
+        
+        function updateShareButtonUI() {
+            const shareButton = document.getElementById('btn-toggle-share');
+            const status = isSharingScreen ? 'Compartiendo' : 'Pantalla';
+            shareButton.className = `control-button inline-flex items-center px-3 py-2 sm:py-3 sm:px-4 text-white rounded-full text-lg hover:opacity-80 font-semibold ${isSharingScreen ? 'bg-blue-600' : 'bg-gray-600'}`;
+            shareButton.innerHTML = `<i class="fas ${isSharingScreen ? 'fa-tv' : 'fa-desktop'} mr-1 sm:mr-2"></i> <span>${status}</span>`;
+        }
+
+        
+        // --- INICIALIZACIÓN GLOBAL ---
+        document.addEventListener('DOMContentLoaded', () => {
+            setupAuth(); 
+            startLocalMedia(); 
+            
+            document.getElementById('chat-input').addEventListener('keypress', (e) => {
+                if (e.key === 'Enter') {
+                    window.sendMessage();
+                }
+            });
+            
+            // Si no hay nombre guardado, mostrar el prompt
+            if (!userName) {
+                 document.getElementById('name-prompt-overlay').classList.remove('hidden');
+                 document.getElementById('btn-call').disabled = true;
+                 updateStatus('Ingresa tu nombre para comenzar.', 'text-yellow-400');
+            } else {
+                 document.getElementById('user-name-display').textContent = userName;
+                 // Si el nombre existe, inicia la llamada automáticamente al cargar
+                 startCall();
+            }
+            
+            updateShareButtonUI();
+        });
+        
+    </script>
+    
+    <!-- OVERLAY para la Solicitud de Nombre (Mandatorio) -->
+    <div id="name-prompt-overlay" class="hidden">
+        <div class="bg-white p-8 rounded-xl shadow-2xl w-full max-w-md text-gray-900">
+            <h2 class="text-3xl font-bold mb-4 text-indigo-600">Bienvenido a la Reunión</h2>
+            <p class="mb-6">Como requisito de **Cuarzo Cristal Empresarial**, por favor ingresa tu nombre completo para identificarte en la sala.</p>
+            <input id="name-input" type="text" placeholder="Tu Nombre Completo" 
+                   value=""
+                   class="w-full p-3 mb-2 border border-gray-300 rounded-lg focus:ring-indigo-500 focus:border-indigo-500" />
+            
+            <!-- Mensaje de Error (custom en lugar de alert) -->
+            <p id="name-error-message" class="text-sm text-red-600 mb-4 hidden"></p>
+
+            <button onclick="setUserNameAndContinue()" class="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-3 rounded-lg transition duration-300">
+                <i class="fas fa-video-camera mr-2"></i> Acceder e Iniciar Reunión
+            </button>
+            <p class="mt-4 text-sm text-gray-500">Este nombre se guardará localmente para la próxima vez.</p>
+        </div>
+    </div>
+    
+    <!-- Contenedor Principal -->
+    <div class="room-container rounded-xl p-3 h-[96vh] flex flex-col">
+        
+        <!-- Header -->
+        <header class="flex justify-between items-center p-3 mb-3 border-b border-gray-700">
+            <h1 class="text-xl sm:text-2xl font-extrabold text-indigo-400">
+                <i class="fas fa-handshake mr-2"></i> Reunión Cuarzo Cristal Empresarial
+            </h1>
+            <div class="text-sm font-semibold text-gray-400">
+                <span id="user-name-display">Cargando...</span> | 
+                <span id="user-id-display" class="text-xs"></span>
+            </div>
+        </header>
+
+        <!-- Área Central: Videos y Chat -->
+        <div class="flex flex-1 overflow-hidden flex-col lg:flex-row">
+            
+            <!-- Video Local y Remotos (WebRTC) -->
+            <div class="flex-1 rounded-lg flex flex-col overflow-hidden mr-0 lg:mr-3 mb-4 lg:mb-0">
+                
+                <!-- Contenedor Principal de Videos -->
+                <div class="flex-1 grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <!-- Video Local -->
+                    <div class="video-tile bg-gray-900 rounded-xl overflow-hidden border-4 border-blue-500">
+                        <video id="local-video-player" autoplay playsinline muted 
+                               class="w-full h-full absolute top-0 left-0"></video>
+                        <div id="video-off-icon" class="absolute inset-0 flex items-center justify-center bg-gray-800 hidden">
+                            <i class="fas fa-camera-off text-6xl text-gray-500"></i>
+                        </div>
+                        <div class="absolute bottom-0 left-0 right-0 p-2 bg-black/70 text-sm font-bold text-white">
+                            <i class="fas fa-circle text-red-500 text-xs mr-2 animate-pulse"></i>
+                            Tu Video (Local)
+                        </div>
+                    </div>
+                    
+                    <!-- Videos Remotos (Solo 1 para el ejemplo P2P) -->
+                    <div id="remote-video-grid" class="video-tile bg-gray-800 rounded-xl relative overflow-hidden">
+                        <i class="fas fa-users text-6xl text-gray-500/70"></i>
+                        <span class="absolute bottom-2 font-semibold text-gray-400">Esperando Peer Remoto...</span>
+                    </div>
+                </div>
+                
+                <!-- Barra de Controles Inferior (Funcional) -->
+                <div class="control-bar mt-4 bg-gray-900 rounded-xl flex justify-center space-x-2 sm:space-x-4 p-2 sm:p-3">
+                    
+                    <button id="btn-call" onclick="startCall()" disabled class="inline-flex items-center px-4 py-3 bg-indigo-600 text-white rounded-full text-lg hover:bg-indigo-700 font-bold transition duration-300 shadow-xl disabled:opacity-50">
+                        <i class="fas fa-phone-volume mr-1 sm:mr-2"></i> <span>Conectando...</span>
+                    </button>
+                    
+                    <button id="btn-toggle-mic" onclick="toggleMic()" class="control-button inline-flex items-center" title="Activar/Silenciar Micrófono">
+                        <i class="fas fa-microphone-alt mr-1 sm:mr-2"></i> <span>Mic ON</span>
+                    </button>
+                    
+                    <button id="btn-toggle-video" onclick="toggleVideo()" class="control-button inline-flex items-center" title="Encender/Apagar Video">
+                        <i class="fas fa-video mr-1 sm:mr-2"></i> <span>Video ON</span>
+                    </button>
+
+                    <button id="btn-toggle-share" onclick="toggleScreenShare()" class="control-button inline-flex items-center" title="Compartir Pantalla (para capacitaciones)">
+                        <i class="fas fa-desktop mr-1 sm:mr-2"></i> <span>Pantalla</span>
+                    </button>
+                    
+                    <!-- Botón de Colgar (Llamada al cierre de P2P) -->
+                    <button onclick="hangUp()" class="inline-flex items-center justify-center py-2 px-4 bg-red-700 text-white rounded-full font-semibold hover:bg-red-800 transition">
+                        <i class="fas fa-phone-slash mr-0 sm:mr-2 text-xl"></i> <span class="hidden sm:inline">Finalizar</span>
+                    </button>
+                </div>
+                
+                <p id="connection-status" class="text-sm mb-2 font-semibold text-white mt-3 text-center"></p>
+
+            </div>
+
+            <!-- Sidebar: Chat en Tiempo Real (Firestore) -->
+            <div class="w-full lg:w-96 rounded-lg flex flex-col">
+                <div class="bg-gray-800 p-4 rounded-xl chat-container flex-1 flex flex-col">
+                    <h3 class="text-lg font-bold mb-3 text-white border-b border-gray-700 pb-2">
+                        <i class="fas fa-comments mr-2"></i> Chat de la Reunión (Online)
+                    </h3>
+                    
+                    <!-- Contenedor de Mensajes -->
+                    <div id="chat-messages" class="flex-1 overflow-y-auto space-y-1 mb-4 pr-2 flex flex-col">
+                        <div class="text-center text-sm text-gray-400 p-4">Cargando mensajes...</div>
+                        <!-- Mensajes cargados por JS/Firestore -->
+                    </div>
+                    
+                    <!-- Input de Chat -->
+                    <div class="flex">
+                        <input id="chat-input" type="text" placeholder="Escribe un mensaje, presiona Enter..." 
+                               class="flex-1 p-3 rounded-l-xl bg-gray-700 border-none focus:ring-2 focus:ring-indigo-500" />
+                        <button onclick="sendMessage()" class="bg-indigo-600 hover:bg-indigo-700 text-white px-4 rounded-r-xl">
+                            <i class="fas fa-paper-plane"></i>
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</body>
+</html>

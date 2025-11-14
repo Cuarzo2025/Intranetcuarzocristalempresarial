@@ -1,0 +1,148 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Directorio de Contactos - Cuarzo Empresarial</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    <style>
+        /* Base: Fondo Negro, Letras Blancas */
+        body { 
+            font-family: 'Inter', sans-serif; 
+            background-color: #0d0d0d; 
+            color: #E0E0E0; 
+        }
+        /* Contenedor Principal: Gris Oscuro */
+        .main-card {
+            background-color: #1a1a1a;
+            border: 1px solid #333333;
+        }
+        /* Input y Select Styling */
+        input[type="text"], select {
+            background-color: #333333;
+            border: 1px solid #4a4a4a;
+            color: #E0E0E0;
+        }
+        input[type="text"]:focus, select:focus {
+            border-color: #2563EB;
+            ring-color: #2563EB;
+        }
+        /* Botón de Retorno */
+        .btn-back { 
+            background-color: #4a4a4a; 
+            color: #FFFFFF; 
+            transition: background-color 0.3s, transform 0.1s;
+        }
+        .btn-back:hover { 
+            background-color: #5c5c5c; 
+            transform: scale(1.02); 
+        }
+    </style>
+</head>
+<body class="p-4 sm:p-8 flex justify-center items-start min-h-screen">
+    <div class="w-full max-w-4xl main-card p-6 sm:p-8 rounded-xl shadow-2xl">
+        <h1 class="text-3xl sm:text-4xl font-extrabold text-[#E0E0E0] mb-4 flex items-center">
+            <i class="fas fa-address-book mr-3 text-2xl text-yellow-400"></i> Directorio Global de Empleados
+        </h1>
+        <p class="text-md text-gray-400 mb-6">Encuentra a cualquier miembro del equipo por nombre, puesto o departamento.</p>
+
+        <!-- Barra de Búsqueda y Filtros -->
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
+            <div class="col-span-1 md:col-span-2">
+                <input type="text" id="search-input" onkeyup="filterContacts()" placeholder="Buscar por nombre o puesto..." class="w-full p-3 rounded-lg focus:ring-2" />
+            </div>
+            <select id="department-filter" onchange="filterContacts()" class="p-3 rounded-lg focus:ring-2">
+                <option value="All">Todos los Departamentos</option>
+                <option value="Desarrollo">Desarrollo e Ingeniería</option>
+                <option value="Ventas">Ventas y Cuentas</option>
+                <option value="Marketing">Marketing Digital</option>
+                <option value="Finanzas">Finanzas y Contabilidad</option>
+                <option value="RRHH">Recursos Humanos</option>
+                <option value="Ejecutivo">Dirección Ejecutiva</option>
+            </select>
+        </div>
+
+        <!-- Lista de Contactos -->
+        <div id="contact-list" class="space-y-4">
+            <!-- Contactos se insertarán aquí -->
+        </div>
+
+        <!-- Botón de Retorno -->
+        <div class="mt-10 text-center">
+            <a href="coordinacion.html" class="btn-back inline-flex items-center justify-center py-2 px-6 rounded-lg font-semibold">
+                <i class="fas fa-arrow-left mr-2"></i> Volver a Coordinación
+            </a>
+        </div>
+    </div>
+
+    <script>
+        const contacts = [
+            { id: 1, name: "Natalia Soba", role: "CEO", dept: "Ejecutivo", email: "nsoba@cuarzo.com", phone: "+54 9 11 XXXX-0001", icon: "fas fa-crown text-yellow-400" },
+            { id: 2, name: "Juan Pérez", role: "Director de Ingeniería", dept: "Desarrollo", email: "jperez@cuarzo.com", phone: "+54 9 11 XXXX-0002", icon: "fas fa-code text-blue-400" },
+            { id: 3, name: "Ana López", role: "Gerente de Ventas Senior", dept: "Ventas", email: "alopez@cuarzo.com", phone: "+54 9 11 XXXX-0003", icon: "fas fa-chart-line text-green-400" },
+            { id: 4, name: "Carlos Ruiz", role: "Especialista en IA", dept: "Desarrollo", email: "cruiz@cuarzo.com", phone: "+54 9 11 XXXX-0004", icon: "fas fa-microchip text-blue-400" },
+            { id: 5, name: "Elena Gómez", role: "Analista Financiera", dept: "Finanzas", email: "egomez@cuarzo.com", phone: "+54 9 11 XXXX-0005", icon: "fas fa-dollar-sign text-red-400" },
+            { id: 6, name: "Martín Blanco", role: "Coordinador de Marketing", dept: "Marketing", email: "mblanco@cuarzo.com", phone: "+54 9 11 XXXX-0006", icon: "fas fa-bullhorn text-purple-400" },
+            { id: 7, name: "Sofía Díaz", role: "Recursos Humanos", dept: "RRHH", email: "sdiaz@cuarzo.com", phone: "+54 9 11 XXXX-0007", icon: "fas fa-handshake text-pink-400" },
+        ];
+
+        function renderContacts(contactArray) {
+            const list = document.getElementById('contact-list');
+            list.innerHTML = ''; // Limpiar la lista
+
+            if (contactArray.length === 0) {
+                list.innerHTML = '<p class="text-center text-gray-500 py-10">No se encontraron contactos que coincidan con los filtros.</p>';
+                return;
+            }
+
+            contactArray.forEach(contact => {
+                const contactHtml = `
+                    <div data-dept="${contact.dept}" class="contact-item bg-gray-700/50 p-4 rounded-xl flex flex-col sm:flex-row justify-between items-start sm:items-center transition duration-300 hover:bg-gray-700 hover:shadow-lg">
+                        <div class="flex items-center mb-3 sm:mb-0">
+                            <i class="${contact.icon} text-3xl mr-4"></i>
+                            <div>
+                                <h3 class="text-lg font-bold text-white">${contact.name}</h3>
+                                <p class="text-sm text-gray-300">${contact.role}</p>
+                            </div>
+                        </div>
+                        <div class="text-sm text-right sm:space-y-1">
+                            <p class="font-medium text-blue-300">${contact.dept}</p>
+                            <p class="text-gray-400">
+                                <i class="fas fa-envelope mr-1 text-xs"></i> 
+                                <a href="mailto:${contact.email}" class="hover:underline">${contact.email}</a>
+                            </p>
+                            <p class="text-gray-400">
+                                <i class="fas fa-phone mr-1 text-xs"></i> ${contact.phone}
+                            </p>
+                        </div>
+                    </div>
+                `;
+                list.innerHTML += contactHtml;
+            });
+        }
+
+        function filterContacts() {
+            const searchTerm = document.getElementById('search-input').value.toLowerCase();
+            const departmentFilter = document.getElementById('department-filter').value;
+
+            const filtered = contacts.filter(contact => {
+                const matchesSearch = contact.name.toLowerCase().includes(searchTerm) || 
+                                      contact.role.toLowerCase().includes(searchTerm);
+                
+                const matchesDept = departmentFilter === 'All' || contact.dept === departmentFilter;
+
+                return matchesSearch && matchesDept;
+            });
+
+            renderContacts(filtered);
+        }
+
+        // Cargar todos los contactos al inicio
+        window.onload = () => {
+            renderContacts(contacts);
+        };
+    </script>
+</body>
+</html>

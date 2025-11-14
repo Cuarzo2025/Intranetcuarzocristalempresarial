@@ -1,0 +1,133 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Recursos Humanos - Cuarzo Empresarial</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;600;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    <style>
+        /* Base: Fondo Negro, Letras Blancas */
+        body { 
+            font-family: 'Montserrat', sans-serif; 
+            background-color: #000000; 
+            color: #FFFFFF; 
+        }
+        /* Contenedor Principal: Gris Oscuro */
+        .main-card {
+            background-color: #1a1a1a;
+            border: 1px solid #333333;
+        }
+        /* Cuadros Secundarios: Gris Claro */
+        .sub-card {
+            background-color: #333333; /* Gris claro para los cuadros internos */
+            border: none;
+        }
+        /* Estilo para los inputs y selectores */
+        input, select, textarea {
+            background-color: #4a4a4a; /* Un gris más oscuro para los inputs */
+            border: 1px solid #666666;
+            color: #E0E0E0;
+            padding: 10px;
+            border-radius: 6px;
+            transition: border-color 0.2s;
+        }
+        input:focus, select:focus, textarea:focus {
+            border-color: #FFFFFF;
+            outline: none;
+        }
+        /* Estilos de Insignia de Estado */
+        .status-badge {
+            font-size: 0.75rem;
+            font-weight: 700;
+            padding: 4px 10px;
+            border-radius: 5px;
+            text-transform: uppercase;
+        }
+        .status-pendiente { background-color: #F39C12; color: #000000; }
+        .status-aprobado { background-color: #2ECC71; color: #FFFFFF; }
+        .status-rechazado { background-color: #E74C3C; color: #FFFFFF; }
+    </style>
+</head>
+<body class="p-4 sm:p-8 flex justify-center items-start min-h-screen">
+    <div class="w-full max-w-4xl main-card p-6 sm:p-10 rounded-xl shadow-2xl">
+        <h1 class="text-3xl sm:text-4xl font-extrabold text-[#E0E0E0] mb-6 flex items-center">
+            <i class="fas fa-plane-departure mr-3 text-2xl text-blue-400"></i> Solicitud de Vacaciones y Permisos
+        </h1>
+        <p class="text-lg text-gray-400 mb-8">
+            Consulta tus días disponibles y gestiona nuevas solicitudes de ausencias ante el departamento de RRHH.
+        </p>
+
+        <!-- Saldo de Días (Gris Claro) -->
+        <div class="sub-card p-6 rounded-lg mb-8 flex justify-between items-center">
+            <div>
+                <p class="text-gray-200">Días de Vacaciones Acumulados:</p>
+                <span class="text-5xl font-extrabold text-[#E0E0E0]">18</span>
+            </div>
+            <div>
+                <p class="text-gray-200">Días Usados (Año Actual):</p>
+                <span class="text-5xl font-extrabold text-yellow-400">7</span>
+            </div>
+        </div>
+
+        <!-- Formulario de Solicitud (Gris Claro) -->
+        <div class="sub-card p-6 rounded-lg mb-8">
+            <h2 class="text-2xl font-bold text-[#E0E0E0] mb-4">Nueva Solicitud</h2>
+            <form class="space-y-4">
+                <div>
+                    <label for="tipo" class="block text-sm font-medium text-gray-300 mb-1">Tipo de Ausencia</label>
+                    <select id="tipo" name="tipo" class="w-full">
+                        <option>Vacaciones Anuales</option>
+                        <option>Permiso por Enfermedad</option>
+                        <option>Día Personal</option>
+                    </select>
+                </div>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                        <label for="fechaInicio" class="block text-sm font-medium text-gray-300 mb-1">Fecha de Inicio</label>
+                        <input type="date" id="fechaInicio" name="fechaInicio" class="w-full">
+                    </div>
+                    <div>
+                        <label for="fechaFin" class="block text-sm font-medium text-gray-300 mb-1">Fecha de Fin</label>
+                        <input type="date" id="fechaFin" name="fechaFin" class="w-full">
+                    </div>
+                </div>
+                <div>
+                    <label for="motivo" class="block text-sm font-medium text-gray-300 mb-1">Motivo (Opcional)</label>
+                    <textarea id="motivo" name="motivo" rows="3" class="w-full"></textarea>
+                </div>
+                <button type="submit" class="w-full py-3 bg-blue-600 text-white rounded-lg font-semibold hover:bg-blue-700 transition">
+                    <i class="fas fa-paper-plane mr-2"></i> Enviar Solicitud
+                </button>
+            </form>
+        </div>
+
+        <!-- Historial de Solicitudes (Gris Claro) -->
+        <div class="sub-card p-6 rounded-lg">
+            <h2 class="text-2xl font-bold text-[#E0E0E0] mb-4">Historial Reciente</h2>
+            <ul class="space-y-3">
+                <li class="flex justify-between items-center p-3 bg-gray-600 rounded-lg">
+                    <span class="text-gray-100">Vacaciones - 1 al 5 Dic</span>
+                    <span class="status-badge status-aprobado">Aprobado</span>
+                </li>
+                <li class="flex justify-between items-center p-3 bg-gray-600 rounded-lg">
+                    <span class="text-gray-100">Permiso Personal - 20 Nov</span>
+                    <span class="status-badge status-pendiente">Pendiente</span>
+                </li>
+                <li class="flex justify-between items-center p-3 bg-gray-600 rounded-lg">
+                    <span class="text-gray-100">Vacaciones - 10 al 15 Ene</span>
+                    <span class="status-badge status-rechazado">Rechazado</span>
+                </li>
+            </ul>
+        </div>
+
+        <!-- Botón de Retorno -->
+        <div class="mt-8 text-center">
+            <a href="tareas-activas.html" class="inline-flex items-center justify-center py-2 px-6 bg-gray-600 text-white rounded-lg font-semibold hover:bg-gray-700 transition">
+                <i class="fas fa-arrow-left mr-2"></i> Volver a Tareas Activas
+            </a>
+        </div>
+    </div>
+</body>
+</html>

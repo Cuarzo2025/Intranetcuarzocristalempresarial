@@ -1,0 +1,410 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Registro de Ventas - Tema Oscuro</title>
+    <!-- Carga de Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Configuración de la fuente Inter -->
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@100..900&display=swap');
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #111827; /* Fondo oscuro (Gray 900) */
+            color: #f3f4f6; /* Letras claras (Gray 100) */
+        }
+        /* Ajuste de inputs para tema oscuro */
+        input:not([type="checkbox"]):not([type="radio"]) {
+            background-color: #1f2937; /* Gray 800 */
+            border-color: #374151; /* Gray 700 */
+            color: #f3f4f6; /* Gray 100 */
+        }
+        input:focus {
+            border-color: #06b6d4 !important; /* Mantener el color de enfoque */
+            box-shadow: 0 0 0 3px rgba(6, 182, 212, 0.5); /* Mantener el anillo de enfoque */
+        }
+    </style>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        'primary-blue': '#06b6d4', /* Cyan 500 */
+                        'primary-dark': '#f3f4f6', /* Gray 100 para títulos */
+                        'secondary-dark': '#9ca3af', /* Gray 400 para textos secundarios */
+                        'accent-green': '#10b981', /* Emerald 500 */
+                        'accent-red': '#ef4444', /* Red 500 */
+                    }
+                }
+            }
+        }
+    </script>
+</head>
+<body class="min-h-screen p-4 sm:p-8">
+
+    <div class="max-w-5xl mx-auto">
+        <header class="text-center mb-8">
+            <h1 class="text-3xl font-bold text-primary-dark mb-2">Registro de Ventas Diarias</h1>
+            <p class="text-lg text-secondary-dark">Control y Totalización de Transacciones</p>
+            <div id="authStatus" class="mt-2 text-sm text-secondary-dark">Cargando autenticación...</div>
+        </header>
+
+        <!-- Formulario de Carga de Venta -->
+        <div class="bg-gray-800 p-6 sm:p-8 shadow-2xl rounded-xl mb-8 border-t-4 border-primary-blue">
+            <h2 class="text-xl font-semibold text-primary-dark mb-4">Añadir Nueva Venta</h2>
+            <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-5 gap-4">
+                
+                <!-- Producto -->
+                <div class="md:col-span-1">
+                    <label for="productName" class="block text-sm font-medium text-secondary-dark mb-1">Producto/Descripción</label>
+                    <input type="text" id="productName" required class="w-full p-2 border rounded-lg transition duration-150" placeholder="Ej: Laptop, Servicio, etc.">
+                </div>
+
+                <!-- Cantidad -->
+                <div class="md:col-span-1">
+                    <label for="quantity" class="block text-sm font-medium text-secondary-dark mb-1">Cantidad</label>
+                    <input type="number" id="quantity" required min="1" value="1" class="w-full p-2 border rounded-lg transition duration-150">
+                </div>
+
+                <!-- Precio Unitario -->
+                <div class="md:col-span-1">
+                    <label for="unitPrice" class="block text-sm font-medium text-secondary-dark mb-1">Precio Unitario ($)</label>
+                    <input type="number" id="unitPrice" required min="0.01" step="0.01" class="w-full p-2 border rounded-lg transition duration-150">
+                </div>
+                
+                <!-- Fecha de Venta -->
+                <div class="md:col-span-1">
+                    <label for="saleDate" class="block text-sm font-medium text-secondary-dark mb-1">Fecha</label>
+                    <input type="date" id="saleDate" required class="w-full p-2 border rounded-lg transition duration-150">
+                </div>
+
+                <!-- Botón Añadir -->
+                <div class="md:col-span-1 flex items-end">
+                    <button id="addSaleButton" class="w-full py-2 px-4 bg-primary-blue text-white font-semibold rounded-lg shadow-md hover:bg-cyan-600 transition duration-200 focus:outline-none focus:ring-2 focus:ring-primary-blue focus:ring-offset-2 disabled:opacity-50">
+                        Añadir Venta
+                    </button>
+                </div>
+            </div>
+            <div id="messageBox" class="mt-4 p-3 hidden rounded-lg text-sm font-medium" role="alert"></div>
+        </div>
+        
+        <!-- Contenedor de Resumen y Liquidación -->
+        <div class="grid grid-cols-1 lg:grid-cols-4 gap-6">
+
+            <!-- Card de Total de Ventas (Sticky) -->
+            <div class="lg:col-span-1 bg-gray-800 p-6 sm:p-8 shadow-2xl rounded-xl border-l-4 border-accent-green h-min sticky top-4">
+                <h2 class="text-xl font-semibold text-primary-dark mb-4">Total Acumulado</h2>
+                <div id="totalSalesDisplay" class="text-4xl font-extrabold text-accent-green mb-2">
+                    $0.00
+                </div>
+                <p class="text-sm text-secondary-dark">Monto total de ventas registradas</p>
+
+                <button id="clearAllButton" class="mt-6 w-full py-2 px-4 bg-accent-red text-white font-semibold rounded-lg shadow-md hover:bg-red-600 transition duration-200 focus:outline-none focus:ring-2 focus:ring-accent-red focus:ring-offset-2 disabled:opacity-50">
+                    Limpiar Todas las Ventas
+                </button>
+            </div>
+
+            <!-- Listado de Ventas Registradas -->
+            <div class="lg:col-span-3 bg-gray-800 p-6 sm:p-8 shadow-2xl rounded-xl border-t-4 border-primary-dark">
+                <h2 class="text-xl font-semibold text-primary-dark mb-4">Historial de Ventas</h2>
+                <div id="salesList" class="space-y-3">
+                    <!-- Las ventas se insertarán aquí por JavaScript -->
+                    <p id="loadingMessage" class="text-center text-secondary-dark">Cargando ventas...</p>
+                </div>
+            </div>
+        </div>
+
+    </div>
+
+    <!-- Módulos de Firebase -->
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+        import { getAuth, signInAnonymously, signInWithCustomToken, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { getFirestore, collection, query, onSnapshot, doc, addDoc, deleteDoc, setLogLevel, getDocs } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+
+        // Establecer nivel de log para depuración de Firestore
+        setLogLevel('Debug');
+
+        // Variables globales del Canvas
+        const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
+        const firebaseConfig = JSON.parse(typeof __firebase_config !== 'undefined' ? __firebase_config : '{}');
+        const initialAuthToken = typeof __initial_auth_token !== 'undefined' ? __initial_auth_token : null;
+
+        let db, auth, userId;
+
+        const authStatusElement = document.getElementById('authStatus');
+        const salesListElement = document.getElementById('salesList');
+        const totalSalesDisplay = document.getElementById('totalSalesDisplay');
+        const addSaleButton = document.getElementById('addSaleButton');
+        const clearAllButton = document.getElementById('clearAllButton');
+        const messageBox = document.getElementById('messageBox');
+        
+        // Elementos de entrada
+        const productNameInput = document.getElementById('productName');
+        const quantityInput = document.getElementById('quantity');
+        const unitPriceInput = document.getElementById('unitPrice');
+        const saleDateInput = document.getElementById('saleDate');
+        
+        // --- 1. Utilidades ---
+
+        /** Muestra un mensaje temporal */
+        function showMessage(message, type = 'success') {
+            messageBox.textContent = message;
+            messageBox.classList.remove('hidden', 'bg-red-100', 'text-red-700', 'bg-green-100', 'text-green-700', 'bg-red-900', 'text-red-300', 'bg-green-900', 'text-green-300');
+            
+            if (type === 'error') {
+                messageBox.classList.add('bg-red-900', 'text-red-300'); // Tema oscuro para error
+            } else {
+                messageBox.classList.add('bg-green-900', 'text-green-300'); // Tema oscuro para éxito
+            }
+
+            setTimeout(() => {
+                messageBox.classList.add('hidden');
+            }, 3000);
+        }
+
+        /** Formatea un número como moneda (USD/predeterminado) */
+        function formatCurrency(amount) {
+            return new Intl.NumberFormat('es-AR', {
+                style: 'currency',
+                currency: 'ARS', // Podrías cambiar a 'USD' o el que uses
+                minimumFractionDigits: 2
+            }).format(amount);
+        }
+
+        /** Formatea una fecha YYYY-MM-DD a un formato legible */
+        function formatDate(dateString) {
+            const date = new Date(dateString + 'T00:00:00'); 
+            if (isNaN(date)) return dateString;
+            return date.toLocaleDateString('es-ES', { 
+                day: 'numeric', 
+                month: 'short', 
+                year: 'numeric'
+            });
+        }
+
+        // --- 2. Inicialización y Autenticación de Firebase ---
+
+        try {
+            const app = initializeApp(firebaseConfig);
+            db = getFirestore(app);
+            auth = getAuth(app);
+            
+            if (initialAuthToken) {
+                await signInWithCustomToken(auth, initialAuthToken);
+            } else {
+                await signInAnonymously(auth);
+            }
+
+        } catch (error) {
+            console.error("Error al inicializar o autenticar Firebase:", error);
+            authStatusElement.textContent = "Error de conexión con la base de datos.";
+            addSaleButton.disabled = true;
+            clearAllButton.disabled = true;
+        }
+
+        onAuthStateChanged(auth, (user) => {
+            if (user) {
+                userId = user.uid;
+                authStatusElement.innerHTML = `Usuario ID: <span class="font-mono text-xs bg-gray-700 text-gray-200 p-1 rounded">${userId}</span>`;
+                setupRealtimeListener();
+                addSaleButton.disabled = false;
+                clearAllButton.disabled = false;
+
+                // Establecer la fecha predeterminada de hoy
+                saleDateInput.value = new Date().toISOString().substring(0, 10);
+            } else {
+                userId = null;
+                authStatusElement.textContent = "Sesión no iniciada.";
+            }
+        });
+
+        // --- 3. Funciones de Firestore (CRUD) ---
+
+        /** Obtiene la referencia a la colección de ventas del usuario actual */
+        function getSalesCollectionRef() {
+            if (!userId) {
+                console.error("Usuario no autenticado.");
+                return null;
+            }
+            // Ruta: /artifacts/{appId}/users/{userId}/sales
+            const collectionPath = `artifacts/${appId}/users/${userId}/sales`;
+            return collection(db, collectionPath);
+        }
+
+        /** Maneja la adición de una nueva venta */
+        async function handleAddSale(e) {
+            e.preventDefault();
+            
+            const name = productNameInput.value.trim();
+            const quantity = parseFloat(quantityInput.value);
+            const price = parseFloat(unitPriceInput.value);
+            const date = saleDateInput.value;
+
+            if (!name || isNaN(quantity) || quantity <= 0 || isNaN(price) || price <= 0 || !date) {
+                showMessage("Por favor, complete todos los campos con valores válidos.", 'error');
+                return;
+            }
+            
+            const total = parseFloat((quantity * price).toFixed(2));
+
+            addSaleButton.disabled = true;
+
+            const saleData = {
+                name: name,
+                quantity: quantity,
+                price: price,
+                total: total,
+                date: date, // YYYY-MM-DD
+                createdAt: Date.now()
+            };
+
+            try {
+                await addDoc(getSalesCollectionRef(), saleData);
+                showMessage(`Venta de ${formatCurrency(total)} guardada correctamente.`);
+                // Limpiar campos
+                productNameInput.value = '';
+                quantityInput.value = '1';
+                unitPriceInput.value = '';
+            } catch (error) {
+                console.error("Error al añadir venta:", error);
+                showMessage("Error al guardar la venta. Revisa la consola.", 'error');
+            } finally {
+                addSaleButton.disabled = false;
+            }
+        }
+
+        /** Maneja la eliminación de una venta específica */
+        async function handleDeleteSale(docId) {
+            // Usamos un modal nativo por simplicidad, se debe reemplazar con un modal custom
+            if (!confirm(`¿Estás seguro de que quieres eliminar esta venta?`)) return;
+
+            try {
+                const docRef = doc(getSalesCollectionRef(), docId);
+                await deleteDoc(docRef);
+                showMessage('Venta eliminada.');
+            } catch (error) {
+                console.error("Error al eliminar venta:", error);
+                showMessage("Error al eliminar la venta.", 'error');
+            }
+        }
+
+        /** Maneja la eliminación de TODAS las ventas */
+        async function handleClearAll() {
+            if (!confirm('Esta acción eliminará TODAS las ventas registradas. ¿Deseas continuar?')) return;
+            
+            clearAllButton.disabled = true;
+            try {
+                const snapshot = await getDocs(query(getSalesCollectionRef()));
+                const deletePromises = [];
+                snapshot.forEach((doc) => {
+                    deletePromises.push(deleteDoc(doc.ref));
+                });
+                await Promise.all(deletePromises);
+                showMessage('Todas las ventas han sido eliminadas.');
+            } catch (error) {
+                console.error("Error al eliminar todas las ventas:", error);
+                showMessage("Error al limpiar todas las ventas.", 'error');
+            } finally {
+                clearAllButton.disabled = false;
+            }
+        }
+
+
+        // --- 4. Renderizado y Escucha en Tiempo Real (onSnapshot) ---
+
+        function setupRealtimeListener() {
+            const salesQuery = query(getSalesCollectionRef()); 
+
+            onSnapshot(salesQuery, (snapshot) => {
+                const sales = [];
+                let grandTotal = 0;
+
+                snapshot.forEach((doc) => {
+                    const sale = doc.data();
+                    sales.push({ id: doc.id, ...sale });
+                    grandTotal += sale.total || 0;
+                });
+                
+                // Ordenar las ventas localmente por fecha (más reciente primero)
+                sales.sort((a, b) => {
+                    if (a.date < b.date) return 1;
+                    if (a.date > b.date) return -1;
+                    return b.createdAt - a.createdAt; // Ordenar por hora de creación si la fecha es igual
+                });
+
+                // Renderizar la lista de ventas
+                renderSalesList(sales);
+                
+                // Actualizar el total general
+                totalSalesDisplay.textContent = formatCurrency(grandTotal);
+            }, (error) => {
+                console.error("Error al escuchar cambios en Firestore:", error);
+                salesListElement.innerHTML = '<p class="text-center text-accent-red font-medium">Error al cargar datos. Revisa la conexión.</p>';
+            });
+        }
+        
+        /** Renderiza la lista de ventas en el DOM */
+        function renderSalesList(sales) {
+            salesListElement.innerHTML = ''; // Limpiar la lista actual
+
+            if (sales.length === 0) {
+                salesListElement.innerHTML = '<p class="text-center text-secondary-dark py-4 border-2 border-dashed border-gray-700 rounded-lg">No hay ventas registradas aún.</p>';
+                return;
+            }
+
+            sales.forEach(sale => {
+                const saleElement = document.createElement('div');
+                saleElement.className = 'flex justify-between items-center p-4 bg-gray-700 border border-gray-600 rounded-lg shadow-md hover:shadow-lg transition duration-200 flex-wrap';
+                
+                saleElement.innerHTML = `
+                    <div class="flex-grow w-full sm:w-auto mb-2 sm:mb-0">
+                        <!-- Producto y Fecha -->
+                        <div class="font-bold text-lg text-primary-dark">${sale.name}</div>
+                        <div class="text-xs text-secondary-dark">${formatDate(sale.date)}</div>
+                    </div>
+                    
+                    <div class="flex items-center space-x-4">
+                        <!-- Detalles de Venta -->
+                        <div class="text-right">
+                            <div class="text-sm font-medium text-gray-300">Cant: <span class="font-semibold">${sale.quantity}</span> x ${formatCurrency(sale.price)}</div>
+                        </div>
+
+                        <!-- Total y Botón Eliminar -->
+                        <div class="text-right">
+                            <div class="text-sm font-medium text-primary-blue">TOTAL:</div>
+                            <div class="font-bold text-xl text-accent-green">${formatCurrency(sale.total)}</div>
+                        </div>
+
+                        <button data-id="${sale.id}" class="delete-btn text-accent-red hover:text-red-400 p-2 rounded-full hover:bg-gray-600 transition duration-150" title="Eliminar Venta">
+                            <!-- Icono de basura/eliminar (inline SVG) -->
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                                <path fill-rule="evenodd" d="M9 2a1 1 0 00-.894.553L7.382 4H4a1 1 0 000 2v10a2 2 0 002 2h8a2 2 0 002-2V6a1 1 0 100-2h-3.382l-.724-1.447A1 1 0 0011 2H9zM7 8a1 1 0 011 1v6a1 1 0 11-2 0V9a1 1 0 011-1zm7 1a1 1 0 00-2 0v6a1 1 0 102 0V9z" clip-rule="evenodd" />
+                            </svg>
+                        </button>
+                    </div>
+                `;
+
+                // Añadir evento al botón de eliminar
+                saleElement.querySelector('.delete-btn').addEventListener('click', (e) => {
+                    const docId = e.currentTarget.getAttribute('data-id');
+                    handleDeleteSale(docId);
+                });
+
+                salesListElement.appendChild(saleElement);
+            });
+        }
+
+
+        // --- 5. Event Listeners ---
+        addSaleButton.addEventListener('click', handleAddSale);
+        clearAllButton.addEventListener('click', handleClearAll);
+
+        // Inicializar con la fecha de hoy
+        const today = new Date().toISOString().split('T')[0];
+        saleDateInput.value = today;
+
+    </script>
+</body>
+</html>

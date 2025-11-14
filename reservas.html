@@ -1,0 +1,164 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Reservas de Clientes - Cuarzo Empresarial</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;600;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    <style>
+        /* Base: Fondo Negro, Letras Blancas */
+        body { 
+            font-family: 'Montserrat', sans-serif; 
+            background-color: #000000; 
+            color: #FFFFFF; 
+        }
+        /* Contenedor Principal: Gris Oscuro */
+        .main-card {
+            background-color: #1a1a1a; /* Gris muy oscuro, casi negro */
+            border: 1px solid #333333;
+        }
+        /* Cuadros Secundarios: Gris Claro */
+        .sub-card {
+            background-color: #333333; /* Gris más claro para los cuadros internos */
+            border: none;
+        }
+
+        .btn-action {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            padding: 12px 20px;
+            border-radius: 8px;
+            font-weight: 700;
+            cursor: pointer;
+            transition: background-color 0.3s, transform 0.1s;
+            text-decoration: none;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.2);
+        }
+        
+        /* ESTILO DEL BOTÓN COPIAR: Fondo Blanco FOSFORECENTE, Letras Negras */
+        .btn-copy { 
+            background-color: #f0f0f0; /* Blanco Base */
+            color: #000000; 
+            /* Sombra y efecto sutil para simular el "fosforescente" */
+            box-shadow: 0 0 15px rgba(255, 255, 255, 0.4), inset 0 0 5px rgba(255, 255, 255, 0.5);
+        } 
+        .btn-copy:hover { 
+            background-color: #FFFFFF; 
+            transform: scale(1.02);
+            box-shadow: 0 0 20px rgba(255, 255, 255, 0.6), inset 0 0 8px rgba(255, 255, 255, 0.7);
+        }
+        
+        .btn-back { 
+            background-color: #4a4a4a; 
+            color: #FFFFFF; 
+        }
+        .btn-back:hover { 
+            background-color: #5c5c5c; 
+            transform: scale(1.02); 
+        }
+        
+        /* Tooltip de Copiado */
+        .tooltip {
+            position: absolute;
+            bottom: 100%;
+            left: 50%;
+            transform: translateX(-50%);
+            padding: 5px 10px;
+            background-color: #FFFFFF; /* Fondo del tooltip blanco */
+            color: #000000; /* Texto del tooltip negro */
+            border-radius: 4px;
+            font-size: 0.8rem;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.3s;
+            white-space: nowrap;
+        }
+        .copied .tooltip { opacity: 1; }
+    </style>
+    <script>
+        // Función para copiar el texto al portapapeles
+        function copyToClipboard() {
+            const copyText = "https://cuarzo.com/booking/tu-id-de-empleado-789";
+            
+            // Usamos document.execCommand('copy') como fallback seguro en entornos iframe.
+            const tempInput = document.createElement('input');
+            tempInput.value = copyText;
+            document.body.appendChild(tempInput);
+            tempInput.select();
+            document.execCommand('copy');
+            document.body.removeChild(tempInput);
+
+            const copyButton = document.getElementById('copyButton');
+            
+            // 1. Mostrar Tooltip
+            copyButton.classList.add('copied');
+            
+            // 2. Simular un feedback visual temporalmente en el texto del botón
+            const originalText = copyButton.innerHTML;
+            copyButton.innerHTML = '<i class="fas fa-check-circle mr-2"></i> ¡Copiado!';
+            
+            // Revertir después de 2 segundos
+            setTimeout(() => {
+                copyButton.innerHTML = originalText;
+                copyButton.classList.remove('copied');
+            }, 2000);
+        }
+    </script>
+</head>
+<body class="p-4 sm:p-8 flex justify-center items-start min-h-screen">
+    <div class="w-full max-w-4xl main-card p-6 sm:p-10 rounded-xl shadow-2xl">
+        <h1 class="text-3xl sm:text-4xl font-extrabold text-[#E0E0E0] mb-6 flex items-center">
+            <i class="fas fa-calendar-check mr-3 text-2xl text-blue-400"></i> Gestión de Reuniones
+        </h1>
+        <p class="text-lg text-gray-400 mb-8">
+            Tu centro para compartir la disponibilidad y programar encuentros con clientes y prospectos de manera eficiente.
+        </p>
+
+        <!-- Sección de Enlace Personal (Gris Claro) -->
+        <div class="sub-card p-6 rounded-lg mb-8">
+            <p class="text-xl font-bold text-yellow-400 mb-4">
+                <i class="fas fa-link mr-2"></i> Enlace de Booking Personal
+            </p>
+            <div class="flex flex-col sm:flex-row items-stretch sm:items-center space-y-3 sm:space-y-0 sm:space-x-4">
+                <code class="flex-grow bg-[#0d0d0d] p-3 rounded-lg text-base text-white break-all border border-gray-700 select-all" id="bookingLink">
+                    https://cuarzo.com/booking/tu-id-de-empleado-789
+                </code>
+                <!-- Botón de Copiar con el estilo FOSFORECENTE -->
+                <button 
+                    id="copyButton" 
+                    onclick="copyToClipboard()" 
+                    class="btn-action btn-copy relative transition-all"
+                >
+                    <i class="fas fa-copy mr-2"></i> Copiar
+                    <div class="tooltip">¡Enlace copiado!</div>
+                </button>
+            </div>
+        </div>
+
+        <!-- Sección de Disponibilidad (Gris Claro) -->
+        <div class="sub-card p-6 rounded-lg mb-8">
+            <h2 class="text-2xl font-bold text-[#E0E0E0] mb-4 flex items-center">
+                <i class="fas fa-clock mr-2 text-red-400"></i> Horarios Configurados
+            </h2>
+            <ul class="list-disc list-inside text-gray-400 space-y-2 ml-4">
+                <li>Lunes a Viernes: 9:00 AM - 1:00 PM y 2:00 PM - 6:00 PM</li>
+                <li>Duración estándar de la reunión: 30 minutos</li>
+                <li>Buffer entre reuniones: 10 minutos</li>
+            </ul>
+            <button class="mt-4 btn-action bg-blue-600 text-white hover:bg-blue-700">
+                <i class="fas fa-pen mr-2"></i> Editar Disponibilidad
+            </button>
+        </div>
+
+        <!-- Botón de Retorno -->
+        <div class="mt-8 text-center">
+            <a href="tareas-activas.html" class="btn-action btn-back">
+                <i class="fas fa-arrow-left mr-2"></i> Volver a Tareas Activas
+            </a>
+        </div>
+    </div>
+</body>
+</html>

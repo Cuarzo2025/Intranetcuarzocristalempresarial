@@ -1,0 +1,152 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Gestión de Reservas - Cuarzo Empresarial</title>
+    <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;600;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    <style>
+        /* [MISMO CSS QUE EL ARCHIVO ORIGINAL] */
+        body {
+            background-color: #000000;
+            color: #FFFFFF;
+            font-family: 'Montserrat', sans-serif;
+            margin: 0;
+            padding: 0;
+            display: flex;
+            min-height: 100vh;
+        }
+        .sidebar {
+            width: 250px;
+            background-color: #0d0d0d;
+            padding: 20px;
+            box-shadow: 2px 0 10px rgba(0, 0, 0, 0.5);
+            display: flex;
+            flex-direction: column;
+        }
+        .sidebar-header {
+            text-align: center;
+            margin-bottom: 40px;
+            color: #E0E0E0;
+        }
+        .sidebar-header h2 {
+            font-size: 1.5em;
+            font-weight: 800;
+            margin: 5px 0 0;
+            color: #FFFFFF;
+        }
+        .sidebar nav a {
+            display: block;
+            color: #CCCCCC;
+            text-decoration: none;
+            padding: 15px 10px;
+            margin-bottom: 10px;
+            border-radius: 5px;
+            transition: background-color 0.3s, color 0.3s;
+            font-weight: 600;
+        }
+        .sidebar nav a:hover, .sidebar nav a.active {
+            background-color: #1a1a1a;
+            color: #E0E0E0; /* Gris claro como color de realce */
+        }
+        .sidebar nav a i {
+            margin-right: 10px;
+            width: 20px;
+            text-align: center;
+        }
+        .main-content {
+            flex-grow: 1;
+            padding: 40px;
+            background-color: #000000;
+        }
+        .main-content h1 {
+            color: #FFFFFF;
+            font-weight: 800;
+            border-bottom: 2px solid #333333;
+            padding-bottom: 15px;
+            margin-bottom: 30px;
+        }
+        .action-button {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            padding: 12px 20px;
+            border: none;
+            border-radius: 8px;
+            font-weight: 700;
+            cursor: pointer;
+            transition: background-color 0.3s, transform 0.1s;
+            font-size: 1em;
+            text-decoration: none; 
+        }
+        .btn-primary {
+            background-color: #E0E0E0;
+            color: #000000;
+        }
+        .btn-primary:hover {
+            background-color: #FFFFFF;
+            transform: scale(1.02);
+        }
+        .content-container {
+            background-color: #0d0d0d;
+            padding: 30px;
+            border-radius: 12px;
+            box-shadow: 0 0 15px rgba(0, 0, 0, 0.4);
+            margin-top: 20px;
+        }
+        .link-display {
+            background-color: #1a1a1a;
+            padding: 15px;
+            border-radius: 8px;
+            font-family: monospace;
+            color: #2ECC71; /* Verde para simular éxito/URL */
+            word-break: break-all;
+            margin: 20px 0;
+            border: 1px solid #333;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="sidebar">
+        <div class="sidebar-header">
+            <i class="fas fa-gem" style="font-size: 2.5em; color: #E0E0E0;"></i>
+            <h2>Cuarzo Empresarial</h2>
+        </div>
+        <nav>
+            <a href="dashboard.html"><i class="fas fa-home"></i> Inicio del Dashboard</a>
+            <a href="tareas-activas.html" class="active"><i class="fas fa-tasks"></i> Tareas Activas</a>
+            <a href="reportes.html"><i class="fas fa-chart-line"></i> Reportes</a>
+            <a href="nuevos-clientes.html"><i class="fas fa-handshake"></i> Nuevos Clientes</a> 
+            <a href="datos-personales.html"><i class="fas fa-cog"></i> Configuración</a>
+            <a href="contrato-legal.html"><i class="fas fa-gavel"></i> Documentación Legal</a>
+            <a href="login.html" style="margin-top: auto;"><i class="fas fa-sign-out-alt"></i> Cerrar Sesión</a>
+        </nav>
+    </div>
+
+    <div class="main-content">
+        <h1><i class="fas fa-calendar-check"></i> Gestión de Reservas con Clientes</h1>
+        <p style="color: #CCCCCC;">Aquí puedes gestionar tu disponibilidad y obtener tu enlace personal para que los clientes puedan agendar citas.</p>
+
+        <div class="content-container">
+            <h2 style="font-weight: 600; color: #E0E0E0; margin-top: 0;"><i class="fas fa-link"></i> Tu Enlace de Booking Personal</h2>
+            <div class="link-display" id="booking-link">
+                https://cuarzo-empresarial.com/booking/tu-nombre-de-usuario-123
+            </div>
+
+            <a href="tareas-activas.html" class="action-button btn-primary">
+                <i class="fas fa-copy"></i> Copiar y Compartir Enlace
+            </a>
+            
+            <p style="color: #999999; margin-top: 30px;">Próximas Reservas Confirmadas:</p>
+            <ul style="list-style: none; padding: 0;">
+                <li style="border-bottom: 1px solid #333; padding: 10px 0; color: #CCC;"><i class="fas fa-user-tie" style="margin-right: 10px;"></i> [Cliente Alpha] - Lunes 10:00 AM (Presentación de Propuesta)</li>
+                <li style="border-bottom: 1px solid #333; padding: 10px 0; color: #CCC;"><i class="fas fa-user-tie" style="margin-right: 10px;"></i> [Cliente Beta] - Miércoles 02:00 PM (Revisión Final)</li>
+                <li style="padding: 10px 0; color: #CCC;"><i class="fas fa-user-tie" style="margin-right: 10px;"></i> [Cliente Gamma] - Jueves 11:30 AM (Consulta Inicial)</li>
+            </ul>
+        </div>
+    </div>
+    
+</body>
+</html>

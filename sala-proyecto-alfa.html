@@ -1,0 +1,159 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sala del Proyecto Alfa - Chat y Tareas</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    <style>
+        /* Base: Fondo Oscuro General */
+        body { 
+            font-family: 'Inter', sans-serif; 
+            background-color: #0d0d0d; 
+            color: #E0E0E0; 
+            min-height: 100vh;
+        }
+        /* Contenedor Principal (Gris Oscuro) */
+        .project-container {
+            background-color: #1a1a1a;
+            box-shadow: 0 0 30px rgba(0, 0, 0, 0.5);
+        }
+        /* Área de Chat */
+        .chat-feed {
+            height: calc(100vh - 250px); /* Ajuste dinámico para la altura del viewport */
+            max-height: 600px;
+            overflow-y: auto;
+            scrollbar-color: #4a4a4a #1a1a1a;
+            scrollbar-width: thin;
+        }
+        /* Tarea de Alto Impacto */
+        .task-card {
+            background-color: #262626;
+        }
+        .sender-me {
+            background-color: #3B82F6; /* Azul para mensajes propios */
+            color: white;
+            align-self: flex-end;
+        }
+    </style>
+</head>
+<body class="p-2 sm:p-6">
+    <div class="project-container rounded-xl p-4 sm:p-8 w-full max-w-6xl mx-auto">
+        
+        <!-- Header del Proyecto -->
+        <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6 pb-4 border-b border-gray-700">
+            <div>
+                <h1 class="text-3xl font-extrabold text-blue-400 flex items-center">
+                    <i class="fas fa-cubes mr-3 text-2xl"></i> Proyecto Alfa: Plataforma Cuarzo X
+                </h1>
+                <p class="text-lg text-gray-400 mt-1">Canal de comunicación y gestión de Sprint 5.</p>
+            </div>
+            <div class="mt-4 sm:mt-0 text-right">
+                <span class="inline-block py-1 px-3 rounded-full text-sm font-semibold 
+                             bg-green-600 text-white">
+                    <i class="fas fa-check-circle mr-1"></i> Estado: En Progreso
+                </span>
+            </div>
+        </div>
+
+        <!-- Layout Principal: Chat y Tareas/Métricas -->
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+
+            <!-- Columna 1 & 2: Chat Feed -->
+            <div class="lg:col-span-2 flex flex-col h-full">
+                <div class="bg-gray-800 p-4 rounded-t-xl">
+                    <h2 class="text-xl font-bold text-white"><i class="fas fa-comments mr-2 text-gray-400"></i> Discusión del Equipo</h2>
+                </div>
+                
+                <div id="chat-feed" class="chat-feed bg-gray-800 p-4 space-y-4">
+                    <!-- Mensaje 1 -->
+                    <div class="flex justify-start">
+                        <div class="bg-gray-700 p-3 rounded-xl rounded-tl-none max-w-lg">
+                            <span class="font-semibold text-purple-300 block text-sm">Martín (Marketing)</span>
+                            <p class="text-gray-200">El borrador de la campaña de lanzamiento está listo. ¿Podemos revisarlo en el Daily a las 11:00 AM?</p>
+                            <span class="text-xs text-gray-400 block text-right mt-1">09:45 AM</span>
+                        </div>
+                    </div>
+                    <!-- Mensaje 2 (Propio) -->
+                    <div class="flex justify-end">
+                        <div class="sender-me p-3 rounded-xl rounded-br-none max-w-lg">
+                            <span class="font-semibold text-white block text-sm">Yo (Juan Pérez)</span>
+                            <p>¡Perfecto! Yo revisé el módulo de pagos. ¡Listo para QA!</p>
+                            <span class="text-xs text-white/70 block text-right mt-1">10:05 AM</span>
+                        </div>
+                    </div>
+                     <!-- Mensaje 3 -->
+                    <div class="flex justify-start">
+                        <div class="bg-gray-700 p-3 rounded-xl rounded-tl-none max-w-lg">
+                            <span class="font-semibold text-blue-300 block text-sm">Carlos (IA)</span>
+                            <p>Necesito la lista final de requerimientos para la integración de Gemini. La tengo en la carpeta compartida, revisar "Reqs_v3.pdf".</p>
+                            <span class="text-xs text-gray-400 block text-right mt-1">10:30 AM</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Input del Chat -->
+                <div class="p-4 bg-gray-800 rounded-b-xl border-t border-gray-700">
+                    <div class="flex space-x-3">
+                        <input type="text" placeholder="Enviar mensaje al canal #alfa..." class="flex-1 p-3 rounded-lg bg-gray-700 border-none focus:ring-2 focus:ring-blue-500" />
+                        <button class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-4 rounded-lg transition duration-200">
+                            <i class="fas fa-paper-plane"></i>
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Columna 3: Tareas y Documentos -->
+            <div class="lg:col-span-1 space-y-6">
+                
+                <!-- Resumen de Tareas -->
+                <div class="task-card p-5 rounded-xl">
+                    <h2 class="text-xl font-bold mb-3 text-red-300 flex items-center"><i class="fas fa-tasks mr-2"></i> Tareas de Sprint</h2>
+                    <ul class="space-y-3 text-sm">
+                        <li class="flex items-center text-red-400">
+                            <i class="fas fa-exclamation-circle mr-2"></i> 
+                            <span class="font-semibold">Baja Prioridad:</span> Integración de API externa (Vencimiento: Hoy)
+                        </li>
+                        <li class="flex items-center text-green-400">
+                            <i class="fas fa-check-circle mr-2"></i> 
+                            <span class="font-semibold">En Curso:</span> Revisión de diseño UX/UI
+                        </li>
+                        <li class="flex items-center text-gray-400">
+                            <i class="fas fa-clock mr-2"></i> 
+                            <span class="font-semibold">Pendiente:</span> Documentación final
+                        </li>
+                    </ul>
+                    <button class="w-full mt-4 bg-gray-600 hover:bg-gray-700 text-white py-2 rounded-lg text-sm font-semibold transition">
+                        Ver Panel Completo
+                    </button>
+                </div>
+
+                <!-- Documentos Importantes -->
+                <div class="task-card p-5 rounded-xl">
+                    <h2 class="text-xl font-bold mb-3 text-yellow-300 flex items-center"><i class="fas fa-folder-open mr-2"></i> Documentos Clave</h2>
+                    <ul class="space-y-3 text-sm">
+                        <li class="text-gray-300 hover:text-white cursor-pointer transition flex items-center">
+                            <i class="fas fa-file-pdf mr-2 text-red-500"></i> Especificaciones Funcionales v1.2
+                        </li>
+                        <li class="text-gray-300 hover:text-white cursor-pointer transition flex items-center">
+                            <i class="fas fa-link mr-2 text-blue-500"></i> Repositorio de Código (GitHub)
+                        </li>
+                        <li class="text-gray-300 hover:text-white cursor-pointer transition flex items-center">
+                            <i class="fas fa-file-word mr-2 text-yellow-500"></i> Plan de Pruebas QA
+                        </li>
+                    </ul>
+                </div>
+                
+                <!-- Botón de Retorno -->
+                <a href="coordinacion.html" class="inline-flex task-card items-center justify-center w-full py-3 px-6 rounded-lg font-semibold hover:bg-gray-700 transition">
+                    <i class="fas fa-arrow-left mr-2"></i> Volver a Coordinación
+                </a>
+            </div>
+
+        </div>
+
+    </div>
+</body>
+</html>
